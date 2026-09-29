@@ -1,0 +1,18 @@
+local Players = game:GetService("Players")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "BlackScreen"
+gui.IgnoreGuiInset = true
+gui.ResetOnSpawn = false
+gui.DisplayOrder = 999999
+gui.Parent = playerGui
+
+local black = Instance.new("Frame")
+black.Size = UDim2.fromScale(1, 1)
+black.Position = UDim2.fromScale(0, 0)
+black.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+black.BorderSizePixel = 0
+black.Parent = gui
