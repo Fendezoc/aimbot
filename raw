@@ -1,0 +1,345 @@
+--========================================================--
+--                 FPS EXTREME BOOST                     --
+--              Roblox Studio - LocalScript              --
+--========================================================--
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
+local UserInputService = game:GetService("UserInputService")
+
+local Player = Players.LocalPlayer
+
+--========================================================--
+-- SETTINGS
+--========================================================--
+
+local CurrentMode = "Potato"
+local AutoBoost = true
+
+local Modes = {
+	Low = {
+		Particles = true,
+		Shadows = true,
+		PostFX = true,
+		Transparency = 0,
+	},
+
+	Potato = {
+		Particles = false,
+		Shadows = false,
+		PostFX = false,
+		Transparency = 0.05,
+	},
+
+	Extreme = {
+		Particles = false,
+		Shadows = false,
+		PostFX = false,
+		Transparency = 0.15,
+	}
+}
+
+--========================================================--
+-- GRAPHICS
+--========================================================--
+
+local function DisablePostEffects()
+	for _, obj in ipairs(Lighting:GetChildren()) do
+		if obj:IsA("BloomEffect")
+			or obj:IsA("BlurEffect")
+			or obj:IsA("ColorCorrectionEffect")
+			or obj:IsA("DepthOfFieldEffect")
+			or obj:IsA("SunRaysEffect") then
+
+			obj.Enabled = false
+		end
+	end
+end
+
+local function OptimizeLighting(mode)
+	if mode == "Low" then
+		Lighting.GlobalShadows = true
+		Lighting.EnvironmentDiffuseScale = 1
+		Lighting.EnvironmentSpecularScale = 1
+	else
+		Lighting.GlobalShadows = false
+		Lighting.EnvironmentDiffuseScale = 0
+		Lighting.EnvironmentSpecularScale = 0
+	end
+
+	if mode ~= "Low" then
+		DisablePostEffects()
+	end
+end
+
+--========================================================--
+-- OBJECT OPTIMIZER
+--========================================================--
+
+local function OptimizeObject(obj, mode)
+
+	if obj:IsA("BasePart") then
+
+		if mode ~= "Low" then
+			obj.CastShadow = false
+		end
+
+	elseif obj:IsA("ParticleEmitter")
+		or obj:IsA("Trail")
+		or obj:IsA("Beam")
+		or obj:IsA("Smoke")
+		or obj:IsA("Fire")
+		or obj:IsA("Sparkles") then
+
+		obj.Enabled = Modes[mode].Particles
+
+	elseif obj:IsA("Highlight") then
+
+		if mode == "Extreme" then
+			obj.Enabled = false
+		end
+	end
+end
+
+local function OptimizeWorld(mode)
+
+	for _, obj in ipairs(workspace:GetDescendants()) do
+		OptimizeObject(obj, mode)
+	end
+
+	OptimizeLighting(mode)
+end
+
+--========================================================--
+-- STREAMING
+--========================================================--
+
+pcall(function()
+
+	workspace.StreamingEnabled = true
+
+	if CurrentMode == "Extreme" then
+		workspace.StreamingMinRadius = 48
+		workspace.StreamingTargetRadius = 96
+	else
+		workspace.StreamingMinRadius = 64
+		workspace.StreamingTargetRadius = 128
+	end
+
+end)
+
+--========================================================--
+-- NEW OBJECTS
+--========================================================--
+
+workspace.DescendantAdded:Connect(function(obj)
+
+	task.defer(function()
+
+		if Modes[CurrentMode] then
+			OptimizeObject(obj, CurrentMode)
+		end
+
+	end)
+
+end)
+
+--========================================================--
+-- FPS COUNTER
+--========================================================--
+
+local FPS = 0
+local Ping = 0
+
+local frameCount = 0
+local timer = 0
+
+RunService.RenderStepped:Connect(function(dt)
+
+	frameCount += 1
+	timer += dt
+
+	if timer >= 1 then
+
+		FPS = math.floor(frameCount / timer)
+
+		frameCount = 0
+		timer = 0
+
+		local Stats = game:GetService("Stats")
+
+		pcall(function()
+			Ping = math.floor(
+				Stats.Network.ServerStatsItem["Data Ping"]:GetValue()
+			)
+		end)
+
+	end
+
+end)
+
+--========================================================--
+-- GUI
+--========================================================--
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "FPSExtremeGUI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = Player:WaitForChild("PlayerGui")
+
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(0, 230, 0, 145)
+Frame.Position = UDim2.new(0, 15, 0, 15)
+Frame.BackgroundTransparency = 0.15
+Frame.Parent = ScreenGui
+
+local Corner = Instance.new("UICorner")
+Corner.CornerRadius = UDim.new(0, 10)
+Corner.Parent = Frame
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.BackgroundTransparency = 1
+Title.Text = "FPS EXTREME"
+Title.TextSize = 18
+Title.Font = Enum.Font.GothamBold
+Title.TextColor3 = Color3.new(1,1,1)
+Title.Parent = Frame
+
+local StatsLabel = Instance.new("TextLabel")
+StatsLabel.Position = UDim2.new(0, 10, 0, 32)
+StatsLabel.Size = UDim2.new(1, -20, 0, 40)
+StatsLabel.BackgroundTransparency = 1
+StatsLabel.TextSize = 15
+StatsLabel.Font = Enum.Font.Gotham
+StatsLabel.TextXAlignment = Enum.TextXAlignment.Left
+StatsLabel.TextColor3 = Color3.new(1,1,1)
+StatsLabel.Parent = Frame
+
+local ModeLabel = Instance.new("TextLabel")
+ModeLabel.Position = UDim2.new(0, 10, 0, 70)
+ModeLabel.Size = UDim2.new(1, -20, 0, 25)
+ModeLabel.BackgroundTransparency = 1
+ModeLabel.TextSize = 14
+ModeLabel.Font = Enum.Font.GothamBold
+ModeLabel.Text = "Mode: Potato"
+ModeLabel.TextXAlignment = Enum.TextXAlignment.Left
+ModeLabel.TextColor3 = Color3.new(1,1,1)
+ModeLabel.Parent = Frame
+
+--========================================================--
+-- MODE BUTTONS
+--========================================================--
+
+local function CreateButton(text, position, mode)
+
+	local Button = Instance.new("TextButton")
+
+	Button.Size = UDim2.new(0, 65, 0, 30)
+	Button.Position = position
+
+	Button.Text = text
+	Button.TextSize = 12
+	Button.Font = Enum.Font.GothamBold
+
+	Button.BackgroundTransparency = 0.1
+	Button.TextColor3 = Color3.new(1,1,1)
+
+	Button.Parent = Frame
+
+	local ButtonCorner = Instance.new("UICorner")
+	ButtonCorner.CornerRadius = UDim.new(0, 6)
+	ButtonCorner.Parent = Button
+
+	Button.MouseButton1Click:Connect(function()
+
+		CurrentMode = mode
+
+		ModeLabel.Text = "Mode: " .. mode
+
+		OptimizeWorld(mode)
+
+	end)
+
+end
+
+CreateButton(
+	"LOW",
+	UDim2.new(0, 10, 0, 105),
+	"Low"
+)
+
+CreateButton(
+	"POTATO",
+	UDim2.new(0, 82, 0, 105),
+	"Potato"
+)
+
+CreateButton(
+	"EXTREME",
+	UDim2.new(0, 154, 0, 105),
+	"Extreme"
+)
+
+--========================================================--
+-- AUTO FPS BOOST
+--========================================================--
+
+local LastBoost = 0
+
+RunService.Heartbeat:Connect(function()
+
+	if not AutoBoost then
+		return
+	end
+
+	if os.clock() - LastBoost < 5 then
+		return
+	end
+
+	if FPS > 0 and FPS < 30 then
+
+		LastBoost = os.clock()
+
+		if CurrentMode == "Low" then
+
+			CurrentMode = "Potato"
+			ModeLabel.Text = "Mode: Potato"
+			OptimizeWorld("Potato")
+
+		elseif CurrentMode == "Potato" then
+
+			CurrentMode = "Extreme"
+			ModeLabel.Text = "Mode: Extreme"
+			OptimizeWorld("Extreme")
+
+		end
+
+	end
+
+end)
+
+--========================================================--
+-- UPDATE GUI
+--========================================================--
+
+RunService.RenderStepped:Connect(function()
+
+	StatsLabel.Text =
+		"FPS: " .. FPS ..
+		"\nPing: " .. Ping .. " ms"
+
+end)
+
+--========================================================--
+-- INITIALIZE
+--========================================================--
+
+OptimizeWorld(CurrentMode)
+
+print("================================")
+print(" FPS EXTREME BOOST ENABLED")
+print(" Mode:", CurrentMode)
+print(" Auto Boost:", AutoBoost)
+print("================================")
