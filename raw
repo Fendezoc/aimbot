@@ -12,7 +12,7 @@ local blur = Lighting:FindFirstChild("PotatoBlur")
 if not blur then
     blur = Instance.new("BlurEffect")
     blur.Name = "PotatoBlur"
-    blur.Size = 30
+    blur.Size = 10
     blur.Parent = Lighting
 end
 
@@ -32,4 +32,4 @@ Lighting.EnvironmentDiffuseScale = 0
 Lighting.EnvironmentSpecularScale = 0
 Lighting.Brightness = 1
 
-print("Potato Graphics: ON | View Distance: 20 studs")
+print("Potato Graphics: ON | View Distance: 40 studs")
